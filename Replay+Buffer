@@ -1,0 +1,708 @@
+{
+ "cells": [
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "!cd gym && pip install -e.[all]"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 1,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "import gym\n",
+    "from IPython import display\n",
+    "from IPython.display import Latex\n",
+    "import matplotlib\n",
+    "import matplotlib.pyplot as plt\n",
+    "from __future__ import print_function\n",
+    "%matplotlib inline"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 2,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "import numpy as np\n",
+    "import random\n",
+    "import tensorflow as tf\n",
+    "import tensorflow.contrib.layers as layers"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Let's start up an interactive tensorflow session and test it out"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 3,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "'Hello, Tensorflow!'"
+      ]
+     },
+     "execution_count": 3,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "sess = tf.InteractiveSession()\n",
+    "hello = tf.constant(\"Hello, Tensorflow!\")\n",
+    "sess.run(hello)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 4,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "array([ 2.66978243,  2.20284723, -4.72784481,  4.28790178])"
+      ]
+     },
+     "execution_count": 4,
+     "metadata": {},
+     "output_type": "execute_result"
+    },
+    {
+     "data": {
+      "image/png": "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\nYII=\n",
+      "text/plain": [
+       "<matplotlib.figure.Figure at 0x7f21dc932490>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    }
+   ],
+   "source": [
+    "from OpenGL.GL import *\n",
+    "from OpenGL.GLU import *\n",
+    "\n",
+    "env = gym.make('CartPole-v0')\n",
+    "## observation = env.reset()\n",
+    "env.reset()\n",
+    "img = plt.imshow(env.render(mode='rgb_array')) # only call this once\n",
+    "for _ in range(100):\n",
+    "    img.set_data(env.render(mode='rgb_array')) # just update the data\n",
+    "    display.display(plt.gcf())\n",
+    "    display.clear_output(wait=True)\n",
+    "    action = env.action_space.sample()\n",
+    "    observation, reward, done, info = env.step(action)\n",
+    "observation"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Our first step is to create policy $\\pi_\\theta(a_t \\mid s_t)$,  for the probabilities of choosing actions based on the state.\n",
+    "The easiest way to do this is using numpy, but in the long run it will be better to use a deep learning library like tensorflow, since we will be calculating policy gradients."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 5,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "def policy(state):    \n",
+    "    state_vector = np.expand_dims(state, axis=0)\n",
+    "    with tf.variable_scope(\"policy\",reuse=tf.AUTO_REUSE):\n",
+    "        W = tf.get_variable(\"W\",[4,2],dtype=tf.float64)\n",
+    "        b = tf.get_variable(\"b\",[2],dtype=tf.float64)\n",
+    "        linear = tf.matmul(state_vector,W)+b\n",
+    "        h = tf.nn.relu(linear)\n",
+    "        probabilities = tf.nn.softmax(h)\n",
+    "    return probabilities"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 7,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "'1.4.0'"
+      ]
+     },
+     "execution_count": 7,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "tf.__version__"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Let's use the last observation from our initial simulation run and use our policy function to get our action probabilities"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 10,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "array([[ 0.24417614,  0.75582386]])"
+      ]
+     },
+     "execution_count": 10,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "init = tf.global_variables_initializer()\n",
+    "init1 = tf.local_variables_initializer()\n",
+    "sess.run(init1)\n",
+    "sess.run(init)\n",
+    "sess.run(policy(observation))"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Now that we have a policy that determines probabilities for each action, we are going to sample actions using these probabilities.\n",
+    "Usually we would use something like np.random.choice, but since we only have 2, we can just select a random number between 0 and 1 and set it to 0 if that's less than the probability, 1 if it's greater."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 13,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "def policy_act(state):\n",
+    "    obs_vector = np.expand_dims(observation, axis=0)\n",
+    "    policy_probabilities = sess.run(policy(state))\n",
+    "    action = 0 if random.uniform(0,1) < policy_probabilities[0][0] else 1\n",
+    "    return action"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Let's test this"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 22,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "1"
+      ]
+     },
+     "execution_count": 22,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "policy_act(observation)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Now that we can select actions, we can modify the basic openai rollout using policy_act.\n",
+    "We will also record the trajectories."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 23,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "def rollout(env, sess, render=False):\n",
+    "    observation = env.reset()\n",
+    "    if render == True:\n",
+    "        img = plt.imshow(env.render(mode='rgb_array')) # only call this once\n",
+    "    totalreward = 0\n",
+    "    states = []\n",
+    "    actions = []\n",
+    "    transitions = []\n",
+    "    future_returns = []\n",
+    "    for _ in xrange(200):\n",
+    "        if render == True:\n",
+    "            img.set_data(env.render(mode='rgb_array')) # just update the data\n",
+    "            display.display(plt.gcf())\n",
+    "            display.clear_output(wait=True)\n",
+    "        \n",
+    "#        obs_vector = np.expand_dims(observation, axis=0)\n",
+    "#        action = sess.run(policy_act(obs_vector))\n",
+    "\n",
+    "        action = policy_act(observation)\n",
+    "\n",
+    "        # Record trajectory\n",
+    "        states.append(observation)\n",
+    "        actionblank = np.zeros(2)  # one hot version: action n is indicated by setting the ith entry of an array to 1 and the rest to 0.\n",
+    "        actionblank[action] = 1    # Example: action 0 is [1,0], action 1 is [0,1]\n",
+    "        actions.append(actionblank)\n",
+    "        old_observation = observation\n",
+    "        observation, reward, done, info = env.step(action)\n",
+    "        \n",
+    "        transitions.append((old_observation, action, reward))\n",
+    "        totalreward += reward\n",
+    "\n",
+    "        if done:\n",
+    "            break\n",
+    "    return states, actions, transitions, totalreward"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 25,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "([array([ 0.00925197,  0.014522  , -0.01784233,  0.02661464]),\n",
+       "  array([ 0.00954241, -0.18033959, -0.01731003,  0.31361514]),\n",
+       "  array([ 0.00593562,  0.01502462, -0.01103773,  0.01552384]),\n",
+       "  array([ 0.00623611, -0.17993732, -0.01072725,  0.30470389]),\n",
+       "  array([ 0.00263736, -0.37490476, -0.00463318,  0.59398449]),\n",
+       "  array([-0.00486073, -0.56996156,  0.00724651,  0.88520439]),\n",
+       "  array([-0.01625996, -0.37493874,  0.0249506 ,  0.5948083 ]),\n",
+       "  array([-0.02375874, -0.18017473,  0.03684677,  0.31008792]),\n",
+       "  array([-0.02736223,  0.0144034 ,  0.04304853,  0.02924934]),\n",
+       "  array([-0.02707417,  0.20888242,  0.04363351, -0.24954657]),\n",
+       "  array([-0.02289652,  0.01316539,  0.03864258,  0.05657374]),\n",
+       "  array([-0.02263321, -0.18248871,  0.03977406,  0.36119389]),\n",
+       "  array([-0.02628298,  0.01204598,  0.04699793,  0.08131313]),\n",
+       "  array([-0.02604206, -0.18371708,  0.0486242 ,  0.38844578]),\n",
+       "  array([-0.02971641, -0.37949428,  0.05639311,  0.69605437]),\n",
+       "  array([-0.03730629, -0.57535111,  0.0703142 ,  1.00594338]),\n",
+       "  array([-0.04881331, -0.38123499,  0.09043307,  0.73614405]),\n",
+       "  array([-0.05643801, -0.18747081,  0.10515595,  0.47323653]),\n",
+       "  array([-0.06018743,  0.00602109,  0.11462068,  0.21546079]),\n",
+       "  array([-0.06006701,  0.19933374,  0.11892989, -0.03898073]),\n",
+       "  array([-0.05608033,  0.00272489,  0.11815028,  0.28873234]),\n",
+       "  array([-0.05602584,  0.19598123,  0.12392493,  0.03552423]),\n",
+       "  array([-0.05210621, -0.00067983,  0.12463541,  0.36459431]),\n",
+       "  array([-0.05211981,  0.19247083,  0.1319273 ,  0.11366372]),\n",
+       "  array([-0.04827039, -0.00427051,  0.13420057,  0.44488548]),\n",
+       "  array([-0.0483558 , -0.20101052,  0.14309828,  0.7766787 ]),\n",
+       "  array([-0.05237601, -0.39778007,  0.15863186,  1.11074367]),\n",
+       "  array([-0.06033161, -0.59458957,  0.18084673,  1.44869372])],\n",
+       " [array([ 1.,  0.]),\n",
+       "  array([ 0.,  1.]),\n",
+       "  array([ 1.,  0.]),\n",
+       "  array([ 1.,  0.]),\n",
+       "  array([ 1.,  0.]),\n",
+       "  array([ 0.,  1.]),\n",
+       "  array([ 0.,  1.]),\n",
+       "  array([ 0.,  1.]),\n",
+       "  array([ 0.,  1.]),\n",
+       "  array([ 1.,  0.]),\n",
+       "  array([ 1.,  0.]),\n",
+       "  array([ 0.,  1.]),\n",
+       "  array([ 1.,  0.]),\n",
+       "  array([ 1.,  0.]),\n",
+       "  array([ 1.,  0.]),\n",
+       "  array([ 0.,  1.]),\n",
+       "  array([ 0.,  1.]),\n",
+       "  array([ 0.,  1.]),\n",
+       "  array([ 0.,  1.]),\n",
+       "  array([ 1.,  0.]),\n",
+       "  array([ 0.,  1.]),\n",
+       "  array([ 1.,  0.]),\n",
+       "  array([ 0.,  1.]),\n",
+       "  array([ 1.,  0.]),\n",
+       "  array([ 1.,  0.]),\n",
+       "  array([ 1.,  0.]),\n",
+       "  array([ 1.,  0.]),\n",
+       "  array([ 1.,  0.])],\n",
+       " [(array([ 0.00925197,  0.014522  , -0.01784233,  0.02661464]), 0, 1.0),\n",
+       "  (array([ 0.00954241, -0.18033959, -0.01731003,  0.31361514]), 1, 1.0),\n",
+       "  (array([ 0.00593562,  0.01502462, -0.01103773,  0.01552384]), 0, 1.0),\n",
+       "  (array([ 0.00623611, -0.17993732, -0.01072725,  0.30470389]), 0, 1.0),\n",
+       "  (array([ 0.00263736, -0.37490476, -0.00463318,  0.59398449]), 0, 1.0),\n",
+       "  (array([-0.00486073, -0.56996156,  0.00724651,  0.88520439]), 1, 1.0),\n",
+       "  (array([-0.01625996, -0.37493874,  0.0249506 ,  0.5948083 ]), 1, 1.0),\n",
+       "  (array([-0.02375874, -0.18017473,  0.03684677,  0.31008792]), 1, 1.0),\n",
+       "  (array([-0.02736223,  0.0144034 ,  0.04304853,  0.02924934]), 1, 1.0),\n",
+       "  (array([-0.02707417,  0.20888242,  0.04363351, -0.24954657]), 0, 1.0),\n",
+       "  (array([-0.02289652,  0.01316539,  0.03864258,  0.05657374]), 0, 1.0),\n",
+       "  (array([-0.02263321, -0.18248871,  0.03977406,  0.36119389]), 1, 1.0),\n",
+       "  (array([-0.02628298,  0.01204598,  0.04699793,  0.08131313]), 0, 1.0),\n",
+       "  (array([-0.02604206, -0.18371708,  0.0486242 ,  0.38844578]), 0, 1.0),\n",
+       "  (array([-0.02971641, -0.37949428,  0.05639311,  0.69605437]), 0, 1.0),\n",
+       "  (array([-0.03730629, -0.57535111,  0.0703142 ,  1.00594338]), 1, 1.0),\n",
+       "  (array([-0.04881331, -0.38123499,  0.09043307,  0.73614405]), 1, 1.0),\n",
+       "  (array([-0.05643801, -0.18747081,  0.10515595,  0.47323653]), 1, 1.0),\n",
+       "  (array([-0.06018743,  0.00602109,  0.11462068,  0.21546079]), 1, 1.0),\n",
+       "  (array([-0.06006701,  0.19933374,  0.11892989, -0.03898073]), 0, 1.0),\n",
+       "  (array([-0.05608033,  0.00272489,  0.11815028,  0.28873234]), 1, 1.0),\n",
+       "  (array([-0.05602584,  0.19598123,  0.12392493,  0.03552423]), 0, 1.0),\n",
+       "  (array([-0.05210621, -0.00067983,  0.12463541,  0.36459431]), 1, 1.0),\n",
+       "  (array([-0.05211981,  0.19247083,  0.1319273 ,  0.11366372]), 0, 1.0),\n",
+       "  (array([-0.04827039, -0.00427051,  0.13420057,  0.44488548]), 0, 1.0),\n",
+       "  (array([-0.0483558 , -0.20101052,  0.14309828,  0.7766787 ]), 0, 1.0),\n",
+       "  (array([-0.05237601, -0.39778007,  0.15863186,  1.11074367]), 0, 1.0),\n",
+       "  (array([-0.06033161, -0.59458957,  0.18084673,  1.44869372]), 0, 1.0)],\n",
+       " 28.0)"
+      ]
+     },
+     "execution_count": 25,
+     "metadata": {},
+     "output_type": "execute_result"
+    },
+    {
+     "data": {
+      "image/png": "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\n",
+      "text/plain": [
+       "<matplotlib.figure.Figure at 0x7fad4d393b90>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    }
+   ],
+   "source": [
+    "rollout(env, sess, render=True)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "With a record of the trajectory/transitions, we can calculate the policy gradient.  Our objective is to maximize future returns, and to maximize this we're taking the gradient of the objective with respect to the policy parameters:\n",
+    "$$ Objective = \\mathbb{E}_{a_t \\sim \\pi_\\theta(s_t)}[{\\sum_{t=0}^\\infty{r_t}}] $$\n",
+    "For one time step\n",
+    "$$ J(\\theta) = \\mathbb{E}[R(S,A)] $$\n",
+    "We can move the gradient across the expectation using the commonly used score function trick:\n",
+    "\n",
+    "$$ \\nabla_\\theta{\\mathbb{E}_{\\pi_\\theta}[\\pi_\\theta]} = \\mathbb{E}[\\nabla_\\theta{\\log{\\pi_\\theta}}] $$\n",
+    "\n",
+    "\n",
+    "$$ \\nabla_\\theta{J(\\theta)} = \\mathbb{E}[\\nabla_\\theta{\\log\\pi_\\theta(A \\mid S)} R(S,A)] $$\n",
+    "\n",
+    "and through gradient descent,\n",
+    "\n",
+    "$$ \\theta_{t+1} = \\theta_t + \\alpha R_{t+1} \\nabla_\\theta{\\log\\pi_\\theta(A_t \\mid S_t)} $$\n",
+    "\n",
+    "In a similar fashion, the Policy Gradient Theorem replaces the reward with future reward, the state value function, or the advantage function.\n",
+    "\n",
+    "Future reward\n",
+    "\n",
+    "$$ G_t = R_t + \\gamma R_{t+1} + \\gamma^2 R_{t+2} + ... $$\n",
+    "\n",
+    "REINFORCE algorithm:\n",
+    "\n",
+    "for each episode\n",
+    "sample trajectory from $\\pi_\\theta$\n",
+    "\n",
+    "for t = 0 to T-1:\n",
+    "\n",
+    "$ \\theta \\leftarrow \\theta + \\alpha G_t \\nabla_\\theta{\\log\\pi_\\theta(A_t \\mid S_t)} $\n",
+    "\n",
+    "return $\\theta$"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "To keep things simple, we're going to apply the Monte Carlo version (REINFORCE).  So we will need to calculate the future returns at each time step.\n",
+    "\n",
+    "To do this, we will iterate through our stored transitions, and at each time step add all future rewards.\n",
+    "$$ G_t = r_t + \\gamma ( r_{t+1} + \\gamma ( r_{t+2} + ...  + \\gamma ( r_{t+i} + ... $$\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 26,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "[15.206855235775091, 14.64624251110834, 14.0682912485653, 13.472465204706495, 12.858211551243809, 12.22496036210702, 11.572124084646411, 10.899096994480837, 10.2052546334854, 9.489953230397319, 8.752529103502392, 7.992298044847826, 7.20855468541013, 6.4005718406289995, 5.567599835699999, 4.70886581, 3.8235729999999997, 2.9109, 1.97, 1.0]\n"
+     ]
+    },
+    {
+     "data": {
+      "image/png": "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\n",
+      "text/plain": [
+       "<matplotlib.figure.Figure at 0x7fad4d0badd0>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    }
+   ],
+   "source": [
+    "states, actions, transitions, totalreward = rollout(env, sess, render=True)\n",
+    "\n",
+    "totalreward = 0\n",
+    "future_returns = []\n",
+    "\n",
+    "\n",
+    "for index, trans in enumerate(transitions):\n",
+    "    obs, action, reward = trans\n",
+    "\n",
+    "    # calculate discounted monte-carlo return\n",
+    "    future_reward = 0\n",
+    "    future_transitions = len(transitions) - index\n",
+    "    decrease = 1\n",
+    "    for index2 in xrange(future_transitions):\n",
+    "        future_reward += transitions[(index2) + index][2] * decrease # transitions[2] are the rewards\n",
+    "        decrease = decrease * 0.97\n",
+    "    future_returns.append(future_reward)\n",
+    "print(future_returns)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Now that we have our future rewards, we can multiply this with our score (log probability of the policy) function to get our loss function for our policy gradient.\n",
+    "\n",
+    "We can combine this with our policy function to form a policy gradient function, which can both calculate the policy given a state (forward pass) and calculate the policy gradient given the state, actions, and future returns."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 27,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "def policy_gradient():\n",
+    "    with tf.variable_scope(\"policy\",reuse=tf.AUTO_REUSE):\n",
+    "        W = tf.get_variable(\"W\",[4,2],dtype=tf.float64)\n",
+    "        b = tf.get_variable(\"b\",[2],dtype=tf.float64)\n",
+    "        state = tf.placeholder(\"float64\",[None,4])\n",
+    "        actions = tf.placeholder(\"float64\",[None,2])\n",
+    "        futurereturns = tf.placeholder(\"float64\",[None,1])\n",
+    "        linear = tf.matmul(state,W)+b\n",
+    "        h = tf.nn.relu(linear)\n",
+    "        probabilities = tf.nn.softmax(h)\n",
+    "        score_function = tf.reduce_sum(tf.log(probabilities)*actions)\n",
+    "        loss = -tf.reduce_sum(score_function*futurereturns)\n",
+    "        optimizer = tf.train.AdamOptimizer(0.01).minimize(loss)\n",
+    "        return probabilities, state, actions, futurereturns, optimizer"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Now tensorflow allows us to use our optimizer (like stochastic gradient descent) to optimize our policy parameters theta to maximize the score in cartpole."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 31,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "policy_grad = policy_gradient()\n",
+    "pl_calculated, pl_state, pl_actions, pl_futurereturns, pl_optimizer = policy_grad\n",
+    "\n",
+    "init = tf.global_variables_initializer()\n",
+    "sess.run(init)\n",
+    "\n",
+    "future_returns_vector = np.expand_dims(future_returns, axis=1)\n",
+    "\n",
+    "sess.run(pl_optimizer, feed_dict={pl_state: states, pl_futurereturns: future_returns_vector, pl_actions: actions})"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Now that we understand the pieces, we're going to combine our rollout, our future returns calculations, and our policy gradient/optimizer into one function"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 32,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "def rollout_complete(env, policy_grad, sess, render=False):\n",
+    "    pl_calculated, pl_state, pl_actions, pl_futurereturns, pl_optimizer = policy_grad\n",
+    "    \n",
+    "    observation = env.reset()\n",
+    "    if render == True:\n",
+    "        img = plt.imshow(env.render(mode='rgb_array')) # only call this once\n",
+    "    totalreward = 0\n",
+    "    states = []\n",
+    "    actions = []\n",
+    "    transitions = []\n",
+    "    futurereturns = []\n",
+    "    for _ in xrange(200):\n",
+    "        if render == True:\n",
+    "            img.set_data(env.render(mode='rgb_array')) # just update the data\n",
+    "            display.display(plt.gcf())\n",
+    "            display.clear_output(wait=True)\n",
+    "        \n",
+    "#        obs_vector = np.expand_dims(observation, axis=0)\n",
+    "#        action = sess.run(policy_act(obs_vector))\n",
+    "\n",
+    "        action = policy_act(observation)\n",
+    "\n",
+    "        # Record trajectory\n",
+    "        states.append(observation)\n",
+    "        actionblank = np.zeros(2)\n",
+    "        actionblank[action] = 1\n",
+    "        actions.append(actionblank)\n",
+    "        old_observation = observation\n",
+    "        observation, reward, done, info = env.step(action)\n",
+    "        \n",
+    "        transitions.append((old_observation, action, reward))\n",
+    "        totalreward += reward\n",
+    "\n",
+    "        if done:\n",
+    "            break\n",
+    "    \n",
+    "    for index, trans in enumerate(transitions):\n",
+    "        obs, action, reward = trans\n",
+    "\n",
+    "        # calculate discounted monte-carlo return\n",
+    "        future_reward = 0\n",
+    "        future_transitions = len(transitions) - index\n",
+    "        decrease = 1\n",
+    "        for index2 in xrange(future_transitions):\n",
+    "            future_reward += transitions[(index2) + index][2] * decrease # transitions[2] are the rewards\n",
+    "            decrease = decrease * 0.97\n",
+    "        future_returns.append(future_reward)\n",
+    "\n",
+    "        future_returns_vector_vector = np.expand_dims(future_returns, axis=1)\n",
+    "        \n",
+    "        sess.run(pl_optimizer, feed_dict={pl_state: states, pl_futurereturns: future_returns_vector, pl_actions: actions})\n",
+    "\n",
+    "    return totalreward"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Finally, we can put it all together:\n",
+    "From scratch, start our environment\n",
+    "Start our tensorflow session\n",
+    "Initiatilize our variables\n",
+    "Then run our rollout_policy function for awhile to learn the policy\n",
+    "Then test it by running the policy for awhile."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stderr",
+     "output_type": "stream",
+     "text": [
+      "[2018-01-28 20:29:11,778] Making new env: CartPole-v0\n"
+     ]
+    }
+   ],
+   "source": [
+    "env = gym.make('CartPole-v0')\n",
+    "policy_grad = policy_gradient()\n",
+    "sess = tf.InteractiveSession()\n",
+    "init = tf.global_variables_initializer()\n",
+    "sess.run(init)\n",
+    "sess.run(tf.initialize_all_variables())\n",
+    "for i in xrange(2000):\n",
+    "    reward = rollout_complete(env, policy_grad, sess)\n",
+    "    if reward == 200:\n",
+    "        print(\"reward 200\")\n",
+    "        print(i)\n",
+    "        break\n",
+    "t = 0\n",
+    "for _ in xrange(1000):\n",
+    "    reward = run_episode(env, policy_grad, sess)\n",
+    "    t += reward\n",
+    "print(t / 1000)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Test",
+   "language": "python",
+   "name": "test"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 2
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython2",
+   "version": "2.7.13"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 2
+}
